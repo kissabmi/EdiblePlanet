@@ -1,57 +1,6 @@
-[gd_scene load_steps=6 format=3 uid="uid://bgame"]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/game.gd" id="1_game"]
-[ext_resource type="Script" path="res://scripts/planet/planet.gd" id="2_planet"]
-[ext_resource type="Script" path="res://scripts/planet/mouth.gd" id="3_mouth"]
-[ext_resource type="Script" path="res://scripts/planet/tilt_controller.gd" id="4_tilt"]
-[ext_resource type="Script" path="res://scripts/planet/magnet_controller.gd" id="5_magnet"]
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_game")
-
-[node name="Background" type="ParallaxBackground" parent="."]
-
-[node name="ParallaxLayer" type="ParallaxLayer" parent="Background"]
-motion_mirroring = Vector2(1280, 0)
-
-[node name="BgRect" type="ColorRect" parent="Background/ParallaxLayer"]
-offset_right = 1280
-offset_bottom = 720
-color = Color(0.05, 0.02, 0.12, 1)
-
-[node name="Planet" type="Node2D" parent="."]
-position = Vector2(640, 450)
-script = ExtResource("2_planet")
-
-[node name="PlanetSprite" type="Sprite2D" parent="Planet"]
-position = Vector2(0, 0)
-
-[node name="Mouth" type="Area2D" parent="Planet"]
-position = Vector2(0, -140)
-script = ExtResource("3_mouth")
-
-[node name="TiltController" type="Node2D" parent="Planet"]
-position = Vector2(0, -140)
-script = ExtResource("4_tilt")
-
-[node name="MagnetController" type="Node2D" parent="Planet"]
-script = ExtResource("5_magnet")
-
-[node name="MagnetCursor" type="Sprite2D" parent="Planet"]
-position = Vector2(0, -200)
-
-[node name="MagnetZone" type="Area2D" parent="Planet"]
-position = Vector2(0, -200)
-collision_mask = 6
-
-[node name="FoodSpawner" type="Node" parent="."]
-script = ExtResource("res://scripts/spawners/food_spawner.gd")
-
-[node name="BugSpawner" type="Node" parent="."]
-script = ExtResource("res://scripts/spawners/bug_spawner.gd")
-
-[node name="FoodGroup" type="Node2D" parent="."]
-
-[node name="HUD" type="CanvasLayer" parent="."]
-layer = 5
-script = ExtResource("res://scripts/ui/hud.gd")

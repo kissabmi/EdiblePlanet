@@ -1,10 +1,10 @@
-## FoodSpawner — spawns space food (candy, cake, bonus, lollipops, peppers)
+## FoodSpawner — spawns space objects
 extends Node
 
 var spawn_timer: float = 0.0
 var spawn_interval: float = 2.0
 var wave_config: Dictionary = {}
-var spawned_counts: Dictionary = {}
+var spawned: Dictionary = {}
 var is_active: bool = false
 
 func _ready() -> void:
@@ -12,53 +12,48 @@ func _ready() -> void:
 
 func _on_wave_started(wave_number: int) -> void:
 	wave_config = WaveManager._get_wave_config(WaveManager.current_level, wave_number)
-	spawned_counts = {
-		"candy": 0, "bug": 0, "butterfly": 0, "cake": 0,
-		"lollipop": 0, "pepper": 0, "acid": 0, "bonus": 0
-	}
+	spawned = {"candy": 0, "lollipop": 0, "pepper": 0, "cake": 0, "bonus": 0}
 	spawn_interval = maxf(0.5, 2.0 / wave_config.get("speed_mult", 1.0))
 	is_active = true
 
 func _process(delta: float) -> void:
-	if not is_active:
-		return
+	if not is_active: return
 	spawn_timer -= delta
 	if spawn_timer <= 0:
 		spawn_timer = spawn_interval
 		_try_spawn()
 
 func _try_spawn() -> void:
-	# Check what still needs spawning
-	var types: Array = ["candy", "lollipop", "pepper", "cake", "bonus"]
-	for type_name in types:
+	for type_name in ["candy", "lollipop", "pepper", "cake", "bonus"]:
 		var target: int = wave_config.get(type_name, 0)
-		if spawned_counts.get(type_name, 0) < target:
-			_spawn_space_object(type_name)
-			spawned_counts[type_name] = spawned_counts.get(type_name, 0) + 1
+		if spawned.get(type_name, 0) < target:
+			_spawn(type_name)
+			spawned[type_name] = spawned.get(type_name, 0) + 1
 			return
 
-func _spawn_space_object(type_name: String) -> void:
+func _spawn(type_name: String) -> void:
 	var node: Node2D = null
 	match type_name:
 		"candy":
-			var obj: RigidBody2D = RigidBody2D.new()
-			obj.set_script(load("res://scripts/food/candy_asteroid.gd"))
-			node = obj
+			node = RigidBody2D.new()
+			node.set_script(load("res://scripts/food/candy_asteroid.gd"))
 		"lollipop":
-			var obj: RigidBody2D = RigidBody2D.new()
-			obj.set_script(load("res://scripts/hazards/sharp_lollipop.gd"))
-			node = obj
+			node = RigidBody2D.new()
+			node.set_script(load("res://scripts/hazards/sharp_lollipop.gd"))
 		"pepper":
-			var obj: RigidBody2D = RigidBody2D.new()
-			obj.set_script(load("res://scripts/hazards/pepper_meteor.gd"))
-			node = obj
+			node = RigidBody2D.new()
+			node.set_script(load("res://scripts/hazards/pepper_meteor.gd"))
 		"cake":
-			var obj: RigidBody2D = RigidBody2D.new()
-			obj.set_script(load("res://scripts/food/cake_comet.gd"))
-			node = obj
+			node = RigidBody2D.new()
+			node.set_script(load("res://scripts/food/cake_comet.gd"))
 		"bonus":
-			var obj: RigidBody2D = RigidBody2D.new()
-			obj.set_script(load("res://scripts/food/bonus_box.gd"))
-			node = obj
+			node = RigidBody2D.new()
+			node.set_script(load("res://scripts/food/bonus_box.gd"))
 	if node:
-		get_parent().get_node("FoodGroup").add_child(node)
+		var fg: Node2D = _get_food_group()
+		if fg: fg.add_child(node)
+
+func _get_food_group() -> Node2D:
+	var g: Node = get_tree().get_first_node_in_group("game_world")
+	if g: return g.get_node_or_null("FoodGroup")
+	return null

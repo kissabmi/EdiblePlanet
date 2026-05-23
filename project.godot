@@ -5,10 +5,8 @@
 [application]
 
 config/name="Edible Planet: Cosmic Feast"
-config/description="Cooperative 2D game — two players control one edible planet!"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.2", "Forward Plus")
-config/icon="res://icon.svg"
 
 [autoload]
 
@@ -24,7 +22,6 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
-window/vsync/vsync_mode=1
 
 [input]
 
@@ -58,24 +55,15 @@ magnet_left={
 }
 magnet_right={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name","","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194316,"key_label":0,"unicode":0,"echo":false,"script":null)]
+"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194316,"key_label":0,"unicode":0,"echo":false,"script":null)]
 }
 magnet_up={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name","","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194319,"key_label":0,"unicode":0,"echo":false,"script":null)]
+"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194319,"key_label":0,"unicode":0,"echo":false,"script":null)]
 }
 magnet_down={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name","","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194321,"key_label":0,"unicode":0,"echo":false,"script":null)]
-}
-ui_accept={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194309,"key_label":0,"unicode":0,"echo":false,"script":null)
-, Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name","","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":90,"key_label":0,"unicode":122,"echo":false,"script":null)]
-}
-pause={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name","","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194305,"key_label":0,"unicode":0,"echo":false,"script":null)]
+"events": [Object(InputEventKey,null,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194321,"key_label":0,"unicode":0,"echo":false,"script":null)]
 }
 
 [layer_names]
@@ -86,7 +74,3 @@ pause={
 2d_physics/layer_4="boss"
 2d_physics/layer_5="magnet_zone"
 2d_physics/layer_6="mouth"
-
-[rendering]
-
-textures/canvas_textures/default_texture_filter=0
