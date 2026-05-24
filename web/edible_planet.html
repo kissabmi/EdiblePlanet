@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edible Planet: Cosmic Feast</title>
+  <style>
+    html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#10071f; font-family:Arial, sans-serif; }
+    canvas { display:block; width:100vw; height:100vh; background:radial-gradient(circle at 50% 45%, #26113f 0%, #10071f 65%, #05020b 100%); }
+    #help { position:fixed; left:14px; bottom:12px; color:#fff; opacity:.75; font-size:14px; line-height:1.35; user-select:none; }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="help">P1: WASD наклоняет планету. P2: мышь + ЛКМ притягивает, ПКМ отталкивает. R - рестарт.</div>
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W = 1280, H = 720, scale = 1;
+  const fit = () => { W = canvas.width = Math.floor(innerWidth * devicePixelRatio); H = canvas.height = Math.floor(innerHeight * devicePixelRatio); scale = Math.min(W/1280, H/720); };
+  addEventListener('resize', fit); fit();
+
+  const rand = (a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const dist = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const keys = new Set();
+  addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); if (e.key.toLowerCase()==='r') reset(); });
+  addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+  addEventListener('contextmenu', e => e.preventDefault());
+
+  const mouse = {x:640,y:360, attract:false, repel:false};
+  addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouse.x=(e.clientX-r.left)*devicePixelRatio/scale; mouse.y=(e.clientY-r.top)*devicePixelRatio/scale; });
+  addEventListener('mousedown', e => { if(e.button===0) mouse.attract=true; if(e.button===2) mouse.repel=true; });
+  addEventListener('mouseup', e => { if(e.button===0) mouse.attract=false; if(e.button===2) mouse.repel=false; });
+
+  let state;
+  function reset(){
+    state = {
+      score:0, level:1, wave:1, time:45, total:45, combo:0, comboTimer:0, eaten:0, poison:0,
+      objects:[], particles:[], boss:null, shake:0, gameOver:false, message:'', messageTimer:0,
+      planet:{x:640,y:420,r:132, tilt:{x:0,y:0}, mouthAngle:-Math.PI/2, shield:0, beacon:0, slow:0}
+    };
+    startWave();
+  }
+
+  function startWave(){
+    state.objects.length = 0;
+    state.time = state.total = state.wave===10 ? 80 : Math.max(28, 48 - state.level*3 - state.wave);
+    state.message = state.wave===10 ? `БОСС ${state.level}!` : `Уровень ${state.level}, волна ${state.wave}`;
+    state.messageTimer = 2;
+    const difficulty = 1 + state.level*.35 + state.wave*.08;
+    if(state.wave===10){
+      state.boss = {x:640,y:-110,vx:0,vy:55,hp:380+state.level*320,max:380+state.level*320,t:0,type:state.level};
+    } else {
+      state.boss = null;
+      const food = 12 + state.wave*3 + state.level*5;
+      const bad = 3 + state.wave + state.level*2;
+      for(let i=0;i<food;i++) setTimeout(()=>spawnFood(difficulty), i*260);
+      for(let i=0;i<bad;i++) setTimeout(()=>spawnHazard(difficulty), i*520+700);
+      if(state.wave%3===0) setTimeout(()=>spawnBonus(), 1500);
+    }
+  }
+
+  function edgePos(){ const a=rand(0,Math.PI*2); return {x:640+Math.cos(a)*760, y:420+Math.sin(a)*760}; }
+  function towardPlanet(o, speed){ const a=Math.atan2(state.planet.y-o.y, state.planet.x-o.x)+rand(-.35,.35); o.vx=Math.cos(a)*speed; o.vy=Math.sin(a)*speed; }
+  function spawnFood(d=1){
+    const p=edgePos(), type=Math.random()<.15?'cake':Math.random()<.45?'bug':Math.random()<.65?'butterfly':'candy';
+    const o={kind:'food',type,x:p.x,y:p.y,vx:0,vy:0,r:type==='cake'?24: type==='butterfly'?13:11,points:type==='cake'?50:type==='butterfly'?25:type==='bug'?15:10,spin:rand(0,9)};
+    if(type==='bug'){ const a=rand(0,Math.PI*2); o.x=state.planet.x+Math.cos(a)*150; o.y=state.planet.y+Math.sin(a)*150; o.vx=rand(-45,45); o.vy=rand(-45,45); }
+    else towardPlanet(o, type==='cake'?45:rand(70,135)*d);
+    state.objects.push(o);
+  }
+  function spawnHazard(d=1){
+    const p=edgePos(), type=Math.random()<.25?'acid':Math.random()<.55?'pepper':'lollipop';
+    const o={kind:'hazard',type,x:p.x,y:p.y,vx:0,vy:0,r:type==='pepper'?16: type==='acid'?13:10,penalty:type==='acid'?30:type==='pepper'?20:15,spin:rand(0,9)};
+    if(type==='acid'){ const a=rand(0,Math.PI*2); o.x=state.planet.x+Math.cos(a)*160; o.y=state.planet.y+Math.sin(a)*160; }
+    else towardPlanet(o, type==='lollipop'?190*d:120*d);
+    state.objects.push(o);
+  }
+  function spawnBonus(){ const p=edgePos(), o={kind:'bonus',type:['double','shield','slow','beacon'][Math.floor(rand(0,4))],x:p.x,y:p.y,vx:0,vy:0,r:17,spin:0}; towardPlanet(o,65); state.objects.push(o); }
+
+  function update(dt){
+    if(state.gameOver) return;
+    const slow = state.planet.slow>0 ? .55 : 1;
+    dt *= slow;
+    const p=state.planet;
+    p.tilt.x = (keys.has('d')?1:0) - (keys.has('a')?1:0);
+    p.tilt.y = (keys.has('s')?1:0) - (keys.has('w')?1:0);
+    const tl = Math.hypot(p.tilt.x,p.tilt.y); if(tl>1){p.tilt.x/=tl;p.tilt.y/=tl;}
+    if(state.comboTimer>0){ state.comboTimer-=dt; if(state.comboTimer<=0) state.combo=0; }
+    if(p.shield>0) p.shield-=dt; if(p.beacon>0) p.beacon-=dt; if(p.slow>0) p.slow-=dt;
+    if(state.messageTimer>0) state.messageTimer-=dt;
+    state.time -= dt;
+    if(state.time<=0 && state.wave!==10) nextWave();
+
+    for(const o of state.objects){
+      const dx=p.x-o.x, dy=p.y-o.y, dd=Math.hypot(dx,dy)||1;
+      o.vx += dx/dd * 18 * dt; o.vy += dy/dd * 18 * dt;
+      o.vx += p.tilt.x * 160 * dt; o.vy += p.tilt.y * 160 * dt;
+      const md=Math.hypot(mouse.x-o.x, mouse.y-o.y)||1, mr=mouse.attract?145:mouse.repel?170:0;
+      if(mr && md<mr){ const power=(1-md/mr)*(mouse.attract?520:-620); o.vx += (mouse.x-o.x)/md*power*dt; o.vy += (mouse.y-o.y)/md*power*dt; o.comboTouch=true; }
+      if(p.beacon>0){ const bd=Math.hypot(p.x-o.x,p.y-o.y)||1; if(bd<260){ o.vx += dx/bd*360*dt; o.vy += dy/bd*360*dt; }}
+      if(o.type==='bug' || o.type==='acid'){ const tang=Math.atan2(o.y-p.y,o.x-p.x)+Math.PI/2; o.vx += Math.cos(tang)*35*dt; o.vy += Math.sin(tang)*35*dt; }
+      o.x += o.vx*dt; o.y += o.vy*dt; o.vx*=.995; o.vy*=.995; o.spin+=dt*4;
+    }
+
+    for(let i=state.objects.length-1;i>=0;i--){
+      const o=state.objects[i];
+      if(dist(o,p) < p.r*.76 + o.r){
+        if(o.kind==='food') eat(o,i);
+        else if(o.kind==='hazard') poison(o,i);
+        else bonus(o,i);
+      }
+      if(o.x<-900||o.x>2200||o.y<-1000||o.y>1800) state.objects.splice(i,1);
+    }
+
+    if(state.boss) updateBoss(dt);
+    for(let i=state.particles.length-1;i>=0;i--){ const q=state.particles[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; if(q.life<=0) state.particles.splice(i,1); }
+    if(state.shake>0) state.shake-=dt*20;
+  }
+  function eat(o,i){
+    const mult = 1 + Math.min(7,state.combo);
+    const combo = o.comboTouch || Math.hypot(state.planet.tilt.x,state.planet.tilt.y)>.3 && (mouse.attract||mouse.repel);
+    if(combo){ state.combo++; state.comboTimer=3; state.message=`КОМБО x${1+Math.min(7,state.combo)}!`; state.messageTimer=.8; burst(o.x,o.y,'rainbow',22); }
+    state.score += Math.floor(o.points * (combo?mult:1)); state.eaten++; burst(o.x,o.y,'food',14); state.objects.splice(i,1);
+  }
+  function poison(o,i){ if(state.planet.shield>0){ burst(o.x,o.y,'shield',12); state.objects.splice(i,1); return; } state.score=Math.max(0,state.score-o.penalty); state.poison++; state.combo=0; state.shake=12; burst(o.x,o.y,'bad',18); state.objects.splice(i,1); }
+  function bonus(o,i){ const p=state.planet; if(o.type==='shield') p.shield=8; if(o.type==='slow') p.slow=8; if(o.type==='beacon') p.beacon=10; if(o.type==='double') { p.beacon=5; p.shield=4; } state.message=`БОНУС: ${o.type.toUpperCase()}!`; state.messageTimer=1.2; burst(o.x,o.y,'gold',26); state.objects.splice(i,1); }
+  function nextWave(){ state.wave++; if(state.wave>10){ state.level++; state.wave=1; if(state.level>3){ state.gameOver=true; state.message=`ПОБЕДА! SCORE ${state.score}`; state.messageTimer=999; return; }} startWave(); }
+  function updateBoss(dt){
+    const b=state.boss, p=state.planet; b.t+=dt; b.y += b.vy*dt; if(b.y>160) b.vy=-10; if(b.y<110) b.vy=12; b.x = 640 + Math.sin(b.t*.8)*230;
+    if(mouse.attract && Math.hypot(mouse.x-b.x, mouse.y-b.y)<190){ b.hp-=90*dt; state.score+=Math.floor(3*dt*60); if(Math.random()<.06) spawnFood(1.4); }
+    if(b.t % (1.4 - b.type*.15) < dt){ for(let i=0;i<b.type+1;i++) spawnHazard(1+b.type*.4); }
+    if(b.hp<=0){ burst(b.x,b.y,'rainbow',80); state.boss=null; state.score+=1000; nextWave(); }
+  }
+  function burst(x,y,type,n){ const colors={food:['#ff6fb0','#8de7ff','#fff176','#a5ff80'],bad:['#ff3333','#ff8a00'],gold:['#ffd700','#fff59d'],shield:['#74d7ff','#ffffff'],rainbow:['#ff4d6d','#ffbe0b','#3aef7d','#4cc9f0','#b517ff']}; const arr=colors[type]||colors.food; for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2), s=rand(80,310); state.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.3,.9),c:arr[Math.floor(rand(0,arr.length))],r:rand(2,5)}); } }
+
+  function draw(){
+    ctx.setTransform(scale,0,0,scale,(W/scale-1280)/2,(H/scale-720)/2);
+    ctx.clearRect(-1000,-1000,4000,3000);
+    const sx=state.shake>0?rand(-state.shake,state.shake):0, sy=state.shake>0?rand(-state.shake,state.shake):0; ctx.save(); ctx.translate(sx,sy);
+    // stars
+    ctx.fillStyle='rgba(255,255,255,.65)'; for(let i=0;i<100;i++){ const x=(i*127)%1280, y=(i*263)%720; ctx.globalAlpha=.25+((i*37)%70)/100; ctx.fillRect(x,y,2,2); } ctx.globalAlpha=1;
+    const p=state.planet;
+    // magnet rings
+    if(mouse.attract||mouse.repel){ ctx.strokeStyle=mouse.attract?'#ff78bc':'#78c8ff'; ctx.lineWidth=4; ctx.globalAlpha=.7; ctx.beginPath(); ctx.arc(mouse.x,mouse.y,mouse.attract?145:170,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1; }
+    if(p.beacon>0){ ctx.strokeStyle='#ffd700'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p.x,p.y,260,0,Math.PI*2); ctx.stroke(); }
+    // objects
+    for(const o of state.objects) drawObj(o);
+    if(state.boss) drawBoss(state.boss);
+    drawPlanet(p);
+    for(const q of state.particles){ ctx.globalAlpha=Math.max(0,q.life); ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(q.x,q.y,q.r,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1;
+    drawUI(); ctx.restore(); requestAnimationFrame(loop);
+  }
+  function drawPlanet(p){
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.tilt.x*.25);
+    const g=ctx.createRadialGradient(-40,-50,20,0,0,p.r); g.addColorStop(0,'#ffc98c'); g.addColorStop(.55,'#f7a65f'); g.addColorStop(1,'#b25a2b');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,p.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ff65ac'; ctx.beginPath(); ctx.arc(0,-18,p.r*.82,Math.PI*1.02,Math.PI*1.98); ctx.fill();
+    for(let i=0;i<35;i++){ ctx.fillStyle=['#fff176','#80ffdb','#8ecaff','#ff70a6'][i%4]; ctx.fillRect(Math.cos(i*2.7)*80-3, -75+Math.sin(i*1.9)*35, 8,3); }
+    ctx.fillStyle='#10071f'; ctx.beginPath(); ctx.arc(0,0,p.r*.36,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-42,-28,12,0,Math.PI*2); ctx.arc(42,-28,12,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-38,-28,5,0,Math.PI*2); ctx.arc(46,-28,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3b001c'; ctx.beginPath(); ctx.ellipse(0,-p.r*.76,34,18,0,0,Math.PI*2); ctx.fill();
+    if(p.shield>0){ ctx.strokeStyle='#7ee8ff'; ctx.lineWidth=5; ctx.globalAlpha=.75; ctx.beginPath(); ctx.arc(0,0,p.r+14,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1; }
+    ctx.restore();
+  }
+  function drawObj(o){ ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.spin); if(o.kind==='food'){ ctx.fillStyle=o.type==='cake'?'#fff1b8':o.type==='bug'?'#56f06a':o.type==='butterfly'?'#8b4a1f':'#ff6faa'; } else if(o.kind==='hazard'){ ctx.fillStyle=o.type==='acid'?'#4dff43':o.type==='pepper'?'#ff7a1a':'#ff3048'; } else ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.stroke(); ctx.restore(); }
+  function drawBoss(b){ ctx.save(); ctx.translate(b.x,b.y); ctx.fillStyle=b.type===1?'#ff3048':b.type===2?'#70401e':'#cc8220'; ctx.beginPath(); ctx.arc(0,0,55+12*b.type,0,Math.PI*2); ctx.fill(); for(let i=0;i<b.type*3;i++){ const a=i*Math.PI*2/(b.type*3)+b.t; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(Math.cos(a)*30,Math.sin(a)*30); ctx.lineTo(Math.cos(a)*95,Math.sin(a)*95); ctx.stroke(); } ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-20,-15,9,0,Math.PI*2); ctx.arc(20,-15,9,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.fillStyle='#300'; ctx.fillRect(390,74,500,18); ctx.fillStyle='#ff3344'; ctx.fillRect(390,74,500*(b.hp/b.max),18); ctx.strokeStyle='#fff'; ctx.strokeRect(390,74,500,18); }
+  function drawUI(){ ctx.fillStyle='#fff'; ctx.font='bold 28px Arial'; ctx.fillText(`Score: ${state.score}`,20,36); ctx.fillText(`Level ${state.level} Wave ${state.wave}/10`,520,36); ctx.fillText(`Time: ${Math.max(0,state.time).toFixed(0)}`,1050,36); if(state.combo>0){ ctx.fillStyle='#ff70d0'; ctx.font='bold 34px Arial'; ctx.fillText(`COMBO x${1+Math.min(7,state.combo)}`,20,76); } if(state.messageTimer>0){ ctx.fillStyle='#ffe066'; ctx.font='bold 46px Arial'; ctx.textAlign='center'; ctx.fillText(state.message,640,150); ctx.textAlign='left'; } ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='16px Arial'; ctx.fillText('WASD: наклон | Mouse: магнит | ЛКМ: притянуть | ПКМ: оттолкнуть | R: рестарт',20,700); }
+  let last=performance.now(); function loop(t){ const dt=Math.min(.033,(t-last)/1000); last=t; update(dt); draw(); }
+  reset(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
