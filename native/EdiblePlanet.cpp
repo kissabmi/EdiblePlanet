@@ -2,6 +2,7 @@
 #define _UNICODE
 
 #include <windows.h>
+#include <windowsx.h>
 #include <shellapi.h>
 #include <cmath>
 #include <ctime>
