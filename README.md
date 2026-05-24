@@ -1,30 +1,29 @@
 # Edible Planet: Cosmic Feast
 
-Cooperative 2D game — two players control one edible planet!
+Cooperative 2D game — two players control one edible planet.
 
-## Quick Start on Windows
+## One-Click Windows 11 Install
 
-### Option 1: With Godot Editor (recommended for first time)
+Download and run as administrator:
 
-1. Download Godot 4.x from https://godotengine.org/download/windows/
-2. Extract `godot4.exe` somewhere
-3. Open terminal (PowerShell or cmd) and run:
+```text
+https://github.com/kissabmi/EdiblePlanet/raw/master/install_windows11_admin.bat
 ```
-godot4.exe --path "C:\path\to\EdiblePlanet"
+
+The installer:
+
+- installs to `C:\Program Files (x86)\Games\EdiblePlanet`
+- downloads the native Windows `EdiblePlanet.exe` from the latest GitHub release
+- creates a Desktop shortcut named `Edible Planet`
+- launches the game immediately
+
+No Godot, no browser, no F5, no manual export.
+
+## Manual Download
+
+```text
+https://github.com/kissabmi/EdiblePlanet/releases/latest/download/EdiblePlanet.exe
 ```
-4. Or: open Godot → Import → select `project.godot` in this folder → Run (F5)
-
-### Option 2: Double-click launch
-
-1. Download Godot 4.x and put `godot4.exe` in your PATH (or in this folder renamed to `godot.exe`)
-2. Double-click `windows\launch.bat`
-
-### Option 3: Export as standalone .exe (no Godot needed after export)
-
-In Godot Editor:
-1. Project → Export → Add → Windows Desktop
-2. Export project → save as `EdiblePlanet.exe` in this folder
-3. Then just run `EdiblePlanet.exe` — no Godot needed!
 
 ## Controls
 
